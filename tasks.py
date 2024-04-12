@@ -5,6 +5,12 @@ from models.Carrito import Carrito
 from models.Venta import Venta
 import redis
 import json
+
+# import necessary packages 
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import smtplib
+
 celery = Celery('tasks', broker='amqp://admin:admin@localhost:5672/', backend='rpc://')
 
 redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
@@ -83,6 +89,26 @@ def send_compra(data:Dict):
 
 @celery.task
 def send_reporte(mensaje:str):
-        redis_client.set(1234, mensaje)
+    # create message object instance 
+    msg = MIMEMultipart()
+    message = mensaje
+    # setup the parameters of the message 
+    password = "fNYFAXSsGM1KrtIp"
+    msg['From'] = "jeppruebarabbitmq@gmail.com"
+    msg['To'] = "jeppruebarabbitmq@gmail.com"
+    msg['Subject'] = "Subscription"
+    # add in the message body 
+    msg.attach(MIMEText(message, 'plain'))
+    #create server 
+    server = smtplib.SMTP('smtp-relay.brevo.com: 587')
+    server.starttls()
+    # Login Credentials for sending the mail 
+    server.login(msg['From'], password)
+    # send the message via the server. 
+    server.sendmail(msg['From'], msg['To'], msg.as_string())
+    server.quit()
+    print("successfully sent email to %s:" % (msg['To']))
+    #Guardamos el mensaje
+    redis_client.set(1234, mensaje)
 
     
